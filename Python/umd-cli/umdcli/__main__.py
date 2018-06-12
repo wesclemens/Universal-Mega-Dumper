@@ -32,10 +32,10 @@ import serial
 import getopt
 import argparse
 import struct
-from hardware import umd
-from genesis import genesis
-from sms import sms
-from snes import snes
+from .hardware import umd
+from .genesis import genesis
+from .sms import sms
+from .snes import snes
 
 # https://docs.python.org/3/howto/argparse.html
 
@@ -62,8 +62,11 @@ def extractHeader(start, size, ifile, ofile):
 ####################################################################################
 ## Main
 ####################################################################################
-if __name__ == "__main__":
-    
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+
+
     ## UMD Modes, names on the right must match values inside the classumd.py dicts
     carts = {"none" : "none",
             "cv" : "Colecovision",
@@ -73,7 +76,7 @@ if __name__ == "__main__":
             "tg" : "Turbografx-16",
             "snes" : "Super Nintendo" }
     
-    parser = argparse.ArgumentParser(prog="umd 0.1.0.0")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--mode", help="Set the cartridge type", choices=["cv", "gen", "sms", "pce", "tg", "snes"], type=str, default="none")
     
     readWriteArgs = parser.add_mutually_exclusive_group()
@@ -117,7 +120,7 @@ if __name__ == "__main__":
                         help="8.3 filename for UMD's serial flash", 
                         type=str)
     
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     
     # init UMD object, set console type
     cartType = carts.get(args.mode)
@@ -380,4 +383,7 @@ if __name__ == "__main__":
     else:
         parser.print_help()
         pass
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
 
