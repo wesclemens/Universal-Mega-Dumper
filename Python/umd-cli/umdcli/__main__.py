@@ -28,16 +28,16 @@ import os
 import sys
 import glob
 import time
-import serial
 import getopt
-import argparse
 import struct
+
+import serial
+
 from .hardware import umd
 from .genesis import genesis
 from .sms import sms
 from .snes import snes
-
-# https://docs.python.org/3/howto/argparse.html
+from .cliparse import parser
 
 ########################################################################    
 ## extractHeader(start, size, ifile, ofile):
@@ -64,7 +64,7 @@ def extractHeader(start, size, ifile, ofile):
 ####################################################################################
 def main(argv=None):
     if argv is None:
-        argv = sys.argv
+        argv = sys.argv[1:]
 
 
     ## UMD Modes, names on the right must match values inside the classumd.py dicts
@@ -76,50 +76,6 @@ def main(argv=None):
             "tg" : "Turbografx-16",
             "snes" : "Super Nintendo" }
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", help="Set the cartridge type", choices=["cv", "gen", "sms", "pce", "tg", "snes"], type=str, default="none")
-    
-    readWriteArgs = parser.add_mutually_exclusive_group()
-    readWriteArgs.add_argument("--checksum", help="Calculate ROM checksum", action="store_true")
-
-    readWriteArgs.add_argument("--byteswap", nargs=1, help="Reverse the endianness of a file", type=str, metavar=('file to byte swap'))
-    
-    readWriteArgs.add_argument("--rd", 
-                                help="Read from UMD", 
-                                choices=["rom", "save", "bram", "header", "fid", "sfid", "sf", "sflist", "byte", "word", "sbyte", "sword"], 
-                                type=str)
-    
-    readWriteArgs.add_argument("--wr", 
-                                help="Write to UMD", 
-                                choices=["rom", "save", "bram", "sf"], 
-                                type=str)
-    
-    readWriteArgs.add_argument("--clr", 
-                                help="Clear a memory in the UMD", 
-                                choices=["rom", "rom2", "save", "bram", "sf"], 
-                                type=str)
-    
-    parser.add_argument("--addr", 
-                        nargs=1, 
-                        help="Address for current command", 
-                        type=str,
-                        default="0")
-    
-    parser.add_argument("--size", 
-                        nargs=1, 
-                        help="Size in bytes for current command", 
-                        type=str,
-                        default="1")
-    
-    parser.add_argument("--file", 
-                        help="File path for read/write operations", 
-                        type=str, 
-                        default="console")
-                        
-    parser.add_argument("--sfile", 
-                        help="8.3 filename for UMD's serial flash", 
-                        type=str)
-    
     args = parser.parse_args(argv)
     
     # init UMD object, set console type
@@ -130,20 +86,6 @@ def main(argv=None):
         ##print( "setting mode to {0}".format(carts.get(args.mode)) )
         #if( not(args.checksum & ( args.file != "console") ) ):
             #umd.connectUMD(cartType)
-    
-    #figure out the size of the operation, default to 1 in arguments so OK to calc everytime
-    if( args.size[0].endswith("Kb") ):  
-        byteCount = int(args.size[0][:-2], 0) * (2**7)
-    elif( args.size[0].endswith("KB") ):
-        byteCount = int(args.size[0][:-2], 0) * (2**10)
-    elif( args.size[0].endswith("Mb") ):
-        byteCount = int(args.size[0][:-2], 0) * (2**17)
-    elif( args.size[0].endswith("MB") ):
-        byteCount = int(args.size[0][:-2], 0) * (2**20)
-    else:
-        byteCount = int(args.size[0], 0)
-    
-    address = int(args.addr[0], 0)
     
     # read operations
     if args.rd:
@@ -241,9 +183,9 @@ def main(argv=None):
         # read from the cartridge, ROM/SAVE/BRAM specified in args.rd
         else:
             umd = umd(cartType)
-            print("reading {0} bytes starting at address 0x{1:X} from {2} {3}".format(byteCount, address, cartType, args.rd))
-            umd.read(address, byteCount, args.rd, args.file)
-            print("read {0} bytes completed in {1:.3f} s".format(byteCount, umd.opTime))
+            print("reading {0} bytes starting at address 0x{1:X} from {2} {3}".format(args.size, args.addr, cartType, args.rd))
+            umd.read(args.addr, args.size, args.rd, args.file)
+            print("read {0} bytes completed in {1:.3f} s".format(args.size, umd.opTime))
 
     # clear operations - erase various memories
     elif args.clr:
@@ -260,13 +202,13 @@ def main(argv=None):
         elif args.clr == "save":
             print("erasing save memory...")
             with open("zeros.bin", "wb+") as f:
-                f.write(bytes(byteCount))
-            umd.write(address, "save", "zeros.bin")
+                f.write(bytes(args.size))
+            umd.write(args.addr, "save", "zeros.bin")
             try:
                 os.remove("zeros.bin")
             except OSError:
                 pass
-            print("cleared {0} bytes of save at address 0x{1:X} in {2:.3f} s".format(byteCount, address, umd.opTime))
+            print("cleared {0} bytes of save at address 0x{1:X} in {2:.3f} s".format(args.size, args.addr, umd.opTime))
             
         # erase the flash rom on a cartridge, some cart types have multiple chips, need to figure out if more than 1 is connected
         elif args.clr == "rom":
@@ -294,8 +236,8 @@ def main(argv=None):
             
             # first check if a local file is to be written to the cartridge
             if args.file != "console":
-                print("burning {0} contents to ROM at address 0x{1:X}".format(args.file, address))
-                umd.write(address, args.wr, args.file)
+                print("burning {0} contents to ROM at address 0x{1:X}".format(args.file, args.addr))
+                umd.write(args.addr, args.wr, args.file)
                 print("burn {0} completed in {1:.3f} s".format(args.file, umd.opTime))
                 
             else:
@@ -305,7 +247,7 @@ def main(argv=None):
 
         # all other writes handled here
         else:
-            umd.write(address, args.wr, args.file)
+            umd.write(args.addr, args.wr, args.file)
             print("wrote to {0} in {1:.3f} s".format(args.wr, umd.opTime))
 
     # checksum operations
@@ -382,7 +324,6 @@ def main(argv=None):
         del genesis
     else:
         parser.print_help()
-        pass
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
