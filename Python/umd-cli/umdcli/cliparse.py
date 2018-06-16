@@ -67,4 +67,3 @@ parser.add_argument("--file",
 parser.add_argument("--sfile",
                     help="8.3 filename for UMD's serial flash",
                     type=str)
-

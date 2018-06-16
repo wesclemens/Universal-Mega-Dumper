@@ -20,4 +20,3 @@ def human_size(size: str) -> int:
         return int(size[:-2], 0) * (2**20)
     else:
         return int(size, 0)
-

@@ -26,18 +26,14 @@
 
 import os
 import sys
-import glob
 import time
-import getopt
-import struct
 
-import serial
-
-from .hardware import umd
+from .cliparse import parser
 from .genesis import genesis
+from .hardware import umd
 from .sms import sms
 from .snes import snes
-from .cliparse import parser
+
 
 ########################################################################    
 ## extractHeader(start, size, ifile, ofile):
@@ -327,4 +323,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
-

@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 ########################################################################
 # \file  hardware.py
@@ -24,14 +23,14 @@
 #
 ########################################################################
 
-import os
-import sys
 import glob
-import time
-import serial
-import getopt
-import argparse
+import os
 import struct
+import sys
+import time
+
+import serial
+
 
 ## Universal Mega Dumper
 #
@@ -642,4 +641,3 @@ class umd:
             print("\rPercent: [{0}] {1:.3f}%\r\n".format(hashes, progress), end="", flush=True)
             #sys.stdout.write("\rPercent: [{0}] {1:.3f}%\r\n".format(hashes, progress))
             #sys.stdout.flush()
-

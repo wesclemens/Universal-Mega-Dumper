@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 ########################################################################
 # \file  snes.py
@@ -24,8 +23,6 @@
 #
 ########################################################################
 
-import os
-import struct
 
 ## SNES
 #
@@ -105,7 +102,3 @@ class snes:
                     print("invalid ascii char {0} found in 0xFFC0 header".format(testChar))
                     headerLo = False
                     break
-
-
-
-

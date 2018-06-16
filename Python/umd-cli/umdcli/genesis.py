@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 ########################################################################
 # \file  genesis.py
@@ -26,6 +25,7 @@
 
 import os
 import struct
+
 
 ## Genesis
 #
@@ -175,4 +175,3 @@ class genesis:
             self.headerData.update({"Country Support": f.read(16).decode("utf-8", "replace") })
         
         return self.headerData
-
